@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#6b8e7d">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="生活支持">
+  <meta name="description" content="ADHD友好的生活提醒与追踪工具">
+  <title>日常生活支持系统</title>
+  
+  <!-- PWA Manifest (内联) -->
+  <link rel="manifest" href="data:application/json,{
+    %22name%22:%22%E6%97%A5%E5%B8%B8%E7%94%9F%E6%B4%BB%E6%94%AF%E6%8C%81%E7%B3%BB%E7%BB%9F%22,
+    %22short_name%22:%22%E7%94%9F%E6%B4%BB%E6%94%AF%E6%8C%81%22,
+    %22description%22:%22ADHD%E5%8F%8B%E5%A5%BD%E7%9A%84%E7%94%9F%E6%B4%BB%E6%8F%90%E9%86%92%E4%B8%8E%E8%B7%9F%E8%B8%AA%E5%B7%A5%E5%85%B7%22,
+    %22start_url%22:%22./index.html%22,
+    %22display%22:%22standalone%22,
+    %22background_color%22:%22%23f8f9fa%22,
+    %22theme_color%22:%22%236b8e7d%22,
+    %22orientation%22:%22portrait%22,
+    %22icons%22:[
+      {%22src%22:%22data:image/svg+xml,%3Csvg%20xmlns%3D%22http://www.w3.org/2000/svg%22%20viewBox%3D%220%200%20192%20192%22%3E%3Crect%20fill%3D%22%236b8e7d%22%20width%3D%22192%22%20height%3D%22192%22%20rx%3D%2240%22/%3E%3Ctext%20y%3D%221.2em%22%20x%3D%2250%25%22%20text-anchor%3D%22middle%22%20font-size%3D%22120%22%3E🌱%3C/text%3E%3C/svg%3E%22,%22sizes%22:%22192x192%22,%22type%22:%22image/svg+xml%22},
+      {%22src%22:%22data:image/svg+xml,%3Csvg%20xmlns%3D%22http://www.w3.org/2000/svg%22%20viewBox%3D%220%200%20512%20512%22%3E%3Crect%20fill%3D%22%236b8e7d%22%20width%3D%22512%22%20height%3D%22512%22%20rx%3D%22100%22/%3E%3Ctext%20y%3D%221.2em%22%20x%3D%2250%25%22%20text-anchor%3D%22middle%22%20font-size%3D%22300%22%3E🌱%3C/text%3E%3C/svg%3E%22,%22sizes%22:%22512x512%22,%22type%22:%22image/svg+xml%22}
+    ]
+  }">
+  
+  <!-- 图标 -->
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect fill='%236b8e7d' width='100' height='100' rx='20'/%3E%3Ctext y='.9em' font-size='80'%3E🌱%3C/text%3E%3C/svg%3E">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect fill='%236b8e7d' width='180' height='180' rx='40'/%3E%3Ctext y='.9em' x='50%25' text-anchor='middle' font-size='120'%3E🌱%3C/text%3E%3C/svg%3E">
+  
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    :root {
+      --primary: #6b8e7d; --primary-light: #8fb3a3; --primary-dark: #4a6b5c;
+      --bg: #f8f9fa; --card-bg: #ffffff;
+      --text: #333333; --text-light: #666666; --border: #e0e0e0;
+      --water: #6bb3d9; --iron: #c97b7b;
+      --shadow: 0 2px 8px rgba(0,0,0,0.08); --radius: 16px;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root { --bg: #1a1a2e; --card-bg: #252542; --text: #e8e8e8; --text-light: #a0a0a0; --border: #3a3a5c; }
+    }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; min-height: 100vh; padding-bottom: 80px; touch-action: manipulation; }
+    .header { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: white; padding: 24px 20px; text-align: center; }
+    .header h1 { font-size: 1.5rem; font-weight: 600; margin-bottom: 8px; }
+    .date-display { font-size: 1rem; opacity: 0.9; }
+    .container { max-width: 480px; margin: 0 auto; padding: 16px; }
+    .card { background: var(--card-bg); border-radius: var(--radius); padding: 20px; margin-bottom: 16px; box-shadow: var(--shadow); }
+    .card-title { font-size: 1.1rem; font-weight: 600; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+    .work-schedule { display: flex; flex-direction: column; gap: 12px; }
+    .schedule-item { display: flex; align-items: center; justify-content: space-between; padding: 16px; background: var(--bg); border-radius: 12px; }
+    .schedule-item.active { background: linear-gradient(135deg, var(--primary-light), var(--primary)); color: white; }
+    .schedule-time { font-size: 1.3rem; font-weight: 600; }
+    .schedule-label { font-size: 0.9rem; opacity: 0.8; }
+    .schedule-status { font-size: 0.85rem; padding: 6px 12px; border-radius: 20px; background: rgba(255,255,255,0.2); }
+    .day-off { text-align: center; padding: 40px 20px; color: var(--text-light); }
+    .day-off-icon { font-size: 3rem; margin-bottom: 12px; }
+    .iron-section { text-align: center; }
+    .iron-button { width: 100%; padding: 20px; font-size: 1.2rem; border: none; border-radius: 12px; cursor: pointer; transition: all 0.15s ease; display: flex; align-items: center; justify-content: center; gap: 12px; }
+    .iron-button.unchecked { background: linear-gradient(135deg, #f5f5f5, #e8e8e8); color: var(--text-light); }
+    .iron-button.checked { background: linear-gradient(135deg, var(--iron), #a85a5a); color: white; }
+    .iron-button:active { transform: scale(0.96); }
+    .iron-streak { margin-top: 12px; font-size: 0.9rem; color: var(--text-light); }
+    .water-display { text-align: center; margin-bottom: 20px; }
+    .water-amount { font-size: 2.5rem; font-weight: 700; color: var(--water); }
+    .water-label { color: var(--text-light); font-size: 0.9rem; }
+    .water-progress { height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; margin-bottom: 20px; }
+    .water-progress-bar { height: 100%; background: linear-gradient(90deg, var(--water), #4a9bc7); border-radius: 4px; transition: width 0.15s ease; }
+    .water-buttons { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    .water-btn { padding: 16px 8px; border: 2px solid var(--water); background: white; color: var(--water); border-radius: 12px; cursor: pointer; font-size: 1rem; font-weight: 600; transition: all 0.15s ease; }
+    .water-btn:active { background: var(--water); color: white; transform: scale(0.95); }
+    .energy-section { text-align: center; }
+    .energy-label { margin-bottom: 16px; color: var(--text-light); }
+    .energy-stars { display: flex; justify-content: center; gap: 12px; margin-bottom: 16px; }
+    .energy-star { font-size: 2.5rem; cursor: pointer; transition: all 0.15s ease; opacity: 0.3; }
+    .energy-star.active { opacity: 1; }
+    .energy-star:active { transform: scale(0.9); }
+    .energy-note { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 0.95rem; resize: vertical; min-height: 60px; font-family: inherit; }
+    .settings-section { margin-bottom: 24px; }
+    .settings-title { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-light); margin-bottom: 12px; }
+    .setting-item { display: flex; justify-content: space-between; align-items: center; padding: 16px 0; border-bottom: 1px solid var(--border); }
+    .setting-item:last-child { border-bottom: none; }
+    .setting-label { display: flex; align-items: center; gap: 12px; }
+    .setting-icon { font-size: 1.3rem; }
+    .toggle { position: relative; width: 52px; height: 28px; }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: var(--border); border-radius: 28px; transition: 0.3s; }
+    .toggle-slider:before { content: ""; position: absolute; height: 22px; width: 22px; left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: 0.3s; }
+    input:checked + .toggle-slider { background: var(--primary); }
+    input:checked + .toggle-slider:before { transform: translateX(24px); }
+    .time-input { padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 1rem; font-family: inherit; }
+    .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--card-bg); border-top: 1px solid var(--border); display: flex; justify-content: space-around; padding: 8px 0; z-index: 100; }
+    .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 8px; cursor: pointer; color: var(--text-light); transition: color 0.2s; text-decoration: none; }
+    .nav-item.active { color: var(--primary); }
+    .nav-icon { font-size: 1.5rem; margin-bottom: 4px; }
+    .nav-label { font-size: 0.75rem; }
+    .btn { padding: 14px 24px; border: none; border-radius: 12px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.15s ease; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+    .btn-primary { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: white; }
+    .btn-secondary { background: var(--bg); color: var(--text); }
+    .btn:active { transform: scale(0.96); }
+    .toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--text); color: white; padding: 12px 24px; border-radius: 8px; font-size: 0.95rem; opacity: 0; transition: all 0.2s ease; z-index: 1000; pointer-events: none; }
+    .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+  </style>
+</head>
+<body>
+  <main id="main-content">
+    <div style="display: flex; justify-content: center; align-items: center; height: 100vh; color: #666;">
+      <div style="text-align: center;">
+        <div style="font-size: 3rem; margin-bottom: 16px;">🌱</div>
+        <div>加载中...</div>
+      </div>
+    </div>
+  </main>
+  <nav class="bottom-nav">
+    <a href="#" class="nav-item active" data-page="home"><span class="nav-icon">🏠</span><span class="nav-label">今日</span></a>
+    <a href="#" class="nav-item" data-page="stats"><span class="nav-icon">📊</span><span class="nav-label">统计</span></a>
+    <a href="#" class="nav-item" data-page="settings"><span class="nav-icon">⚙️</span><span class="nav-label">设置</span></a>
+  </nav>
+  <script>
+    // 数据库
+    const DB_NAME = 'DailySupportDB';
+    class Database {
+      constructor() { this.db = null; }
+      async init() {
+        return new Promise((resolve) => {
+          if (!window.indexedDB) { resolve(null); return; }
+          const request = indexedDB.open(DB_NAME, 1);
+          request.onerror = () => resolve(null);
+          request.onsuccess = () => { this.db = request.result; resolve(this.db); };
+          request.onupgradeneeded = (e) => {
+            const db = e.target.result;
+            if (!db.objectStoreNames.contains('iron')) db.createObjectStore('iron', { keyPath: 'date' });
+            if (!db.objectStoreNames.contains('water')) db.createObjectStore('water', { keyPath: 'date' });
+            if (!db.objectStoreNames.contains('energy')) db.createObjectStore('energy', { keyPath: 'date' });
+            if (!db.objectStoreNames.contains('settings')) db.createObjectStore('settings', { keyPath: 'key' });
+          };
+        });
+      }
+      getTodayString() { return new Date().toISOString().split('T')[0]; }
+      getLocal(key) { try { const d = localStorage.getItem('ds_' + key); return d ? JSON.parse(d) : null; } catch { return null; } }
+      setLocal(key, value) { try { localStorage.setItem('ds_' + key, JSON.stringify(value)); } catch {} }
+      async getIronRecord(date = this.getTodayString()) { return this.db ? await this.get('iron', date) : this.getLocal('iron_' + date); }
+      async setIronTaken(taken, date = this.getTodayString()) {
+        const record = { date, taken, timestamp: Date.now() };
+        if (!this.db) { this.setLocal('iron_' + date, record); return; }
+        return this.put('iron', record);
+      }
+      async getIronStreak() {
+        if (!this.db) return 0;
+        const records = await this.getAll('iron');
+        const sorted = records.sort((a, b) => b.date.localeCompare(a.date));
+        let streak = 0;
+        const today = this.getTodayString();
+        const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+        const todayRecord = sorted.find(r => r.date === today);
+        const yesterdayRecord = sorted.find(r => r.date === yesterday);
+        if (!todayRecord && !yesterdayRecord) return 0;
+        let checkDate = todayRecord?.taken ? today : yesterday;
+        for (const record of sorted) {
+          if (record.date === checkDate && record.taken) {
+            streak++;
+            const prevDate = new Date(new Date(checkDate).getTime() - 86400000).toISOString().split('T')[0];
+            checkDate = prevDate;
+          } else if (record.date < checkDate) { break; }
+        }
+        return streak;
+      }
+      async getWaterRecord(date = this.getTodayString()) { return this.db ? await this.get('water', date) : (this.getLocal('water_' + date) || { date, amount: 0, records: [] }); }
+      async addWater(amount, date = this.getTodayString()) {
+        const record = await this.getWaterRecord(date);
+        record.amount += amount;
+        record.records.push({ amount, time: Date.now() });
+        if (!this.db) { this.setLocal('water_' + date, record); return; }
+        return this.put('water', record);
+      }
+      async getEnergyRecord(date = this.getTodayString()) { return this.db ? await this.get('energy', date) : this.getLocal('energy_' + date); }
+      async setEnergy(level, note = '', date = this.getTodayString()) {
+        const record = { date, level, note, timestamp: Date.now() };
+        if (!this.db) { this.setLocal('energy_' + date, record); return; }
+        return this.put('energy', record);
+      }
+      async getSetting(key, defaultValue = null) { return this.db ? ((await this.get('settings', key))?.value ?? defaultValue) : (this.getLocal('setting_' + key) ?? defaultValue); }
+      async setSetting(key, value) { if (!this.db) { this.setLocal('setting_' + key, value); return; } return this.put('settings', { key, value }); }
+      async get(storeName, key) { return new Promise((resolve) => { const tx = this.db.transaction([storeName], 'readonly'); const req = tx.objectStore(storeName).get(key); req.onsuccess = () => resolve(req.result); req.onerror = () => resolve(null); }); }
+      async put(storeName, data) { return new Promise((resolve) => { const tx = this.db.transaction([storeName], 'readwrite'); tx.objectStore(storeName).put(data); tx.oncomplete = () => resolve(data); tx.onerror = () => resolve(null); }); }
+      async getAll(storeName) { return new Promise((resolve) => { const tx = this.db.transaction([storeName], 'readonly'); const req = tx.objectStore(storeName).getAll(); req.onsuccess = () => resolve(req.result || []); req.onerror = () => resolve([]); }); }
+      async exportData() { return JSON.stringify({ iron: await this.getAll('iron'), water: await this.getAll('water'), energy: await this.getAll('energy'), settings: await this.getAll('settings'), exportDate: new Date().toISOString() }, null, 2); }
+      async importData(json) {
+        const data = JSON.parse(json);
+        for (const r of (data.iron || [])) await this.put('iron', r);
+        for (const r of (data.water || [])) await this.put('water', r);
+        for (const r of (data.energy || [])) await this.put('energy', r);
+        for (const r of (data.settings || [])) await this.put('settings', r);
+      }
+    }
+    const db = new Database();
+
+    // 通知
+    class NotificationManager {
+      constructor() { this.permission = 'default'; }
+      async init() {
+        try {
+          if (!('Notification' in window)) return false;
+          this.permission = Notification.permission;
+          if (this.permission === 'default') this.permission = await Notification.requestPermission();
+          return this.permission === 'granted';
+        } catch { return false; }
+      }
+      async send(title, options = {}) {
+        if (this.permission !== 'granted') return false;
+        try {
+          const opts = { tag: 'daily-support', requireInteraction: false, ...options };
+          if ('serviceWorker' in navigator && navigator.serviceWorker.controller) (await navigator.serviceWorker.ready).showNotification(title, opts);
+          else new Notification(title, opts);
+          return true;
+        } catch { return false; }
+      }
+      async sendWorkReminder(type, time) {
+        const msg = type === 'start' ? `快到上班时间啦！\n${time} 开始工作` : `下班时间到了！\n${time} 结束工作`;
+        return this.send('工作提醒', { body: msg, tag: `work-${type}`, requireInteraction: true });
+      }
+      async sendIronReminder() { return this.send('补铁提醒', { body: '该服用铁剂了💊', tag: 'iron-reminder', requireInteraction: true }); }
+      async sendWaterReminder() { return this.send('喝水提醒', { body: ['该喝水啦！💧', '记得补充水分哦～', '喝口水休息一下吧', '身体需要水啦！'][Math.floor(Math.random() * 4)], tag: 'water-reminder' }); }
+    }
+    const notifications = new NotificationManager();
+
+    // 提醒
+    class ReminderManager {
+      constructor() {
+        this.intervals = [];
+        this.workSchedule = { 1: null, 2: { s: '13:30', e: '20:00' }, 3: { s: '13:30', e: '20:00' }, 4: { s: '13:30', e: '20:00' }, 5: { s: '13:30', e: '20:00' }, 6: { s: '08:30', e: '18:30' }, 0: { s: '08:30', e: '18:30' } };
+      }
+      async init() {
+        this.checkWorkReminders();
+        this.intervals.push(setInterval(() => this.checkWorkReminders(), 60000));
+        this.intervals.push(setInterval(() => this.checkIronReminders(), 60000));
+        this.intervals.push(setInterval(() => this.checkWaterReminders(), 60000));
+      }
+      async checkWorkReminders() {
+        try {
+          const now = new Date(), dow = now.getDay(), ct = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+          const sc = this.workSchedule[dow];
+          if (!sc || !await db.getSetting('workReminders', true)) return;
+          const t = `${String(Math.max(0, parseInt(sc.s.split(':')[0]) - 0)).padStart(2,'0')}:${sc.s.split(':')[1]}`;
+          if (ct === t && !localStorage.getItem(`ws_${this.getTodayString()}`)) { notifications.sendWorkReminder('start', sc.s); localStorage.setItem(`ws_${this.getTodayString()}`, '1'); }
+          if (ct === sc.e && !localStorage.getItem(`we_${this.getTodayString()}`)) { notifications.sendWorkReminder('end', sc.e); localStorage.setItem(`we_${this.getTodayString()}`, '1'); }
+        } catch {}
+      }
+      async checkIronReminders() {
+        try {
+          const st = await db.getSetting('ironTime', '08:00');
+          if (!await db.getSetting('ironReminders', true) || !st) return;
+          const now = new Date(), ct = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+          if (ct === st && !localStorage.getItem(`ir_${this.getTodayString()}`)) { notifications.sendIronReminder(); localStorage.setItem(`ir_${this.getTodayString()}`, '1'); }
+        } catch {}
+      }
+      async checkWaterReminders() {
+        try {
+          if (!await db.getSetting('waterReminders', true)) return;
+          const iv = await db.getSetting('waterInterval', 120);
+          const now = Date.now(), lr = parseInt(localStorage.getItem('lwr') || '0');
+          if (now - lr > iv * 60000 && new Date().getHours() >= 7 && new Date().getHours() < 23) { notifications.sendWaterReminder(); localStorage.setItem('lwr', now.toString()); }
+        } catch {}
+      }
+      getTodayString() { return new Date().toISOString().split('T')[0]; }
+    }
+    const reminders = new ReminderManager();
+
+    // 主应用
+    class App {
+      constructor() { 
+        this.currentPage = 'home'; 
+        this.todayData = { iron: false, water: 0, energy: 0, energyNote: '' }; 
+      }
+      async init() {
+        try {
+          await db.init();
+          await notifications.init();
+          reminders.init();
+          if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+          await this.loadTodayData();
+          this.render();
+          this.bindEvents();
+        } catch (e) { console.error(e); this.render(); }
+      }
+      async loadTodayData() {
+        try {
+          const today = db.getTodayString();
+          const ir = await db.getIronRecord(today);
+          this.todayData.iron = ir ? ir.taken : false;
+          const wr = await db.getWaterRecord(today);
+          this.todayData.water = wr.amount;
+          const er = await db.getEnergyRecord(today);
+          if (er) { this.todayData.energy = er.level; this.todayData.energyNote = er.note || ''; }
+        } catch {}
+      }
+      render() {
+        const main = document.getElementById('main-content');
+        if (!main) return;
+        switch (this.currentPage) {
+          case 'home': main.innerHTML = this.renderHome(); this.bindHomeEvents(); break;
+          case 'stats': main.innerHTML = this.renderStats(); this.bindStatsEvents(); break;
+          case 'settings': main.innerHTML = this.renderSettings(); this.bindSettingsEvents(); break;
+        }
+        this.updateNav();
+      }
+      renderHome() {
+        const today = new Date(), dow = today.getDay(), days = ['周日','周一','周二','周三','周四','周五','周六'];
+        const dateStr = `${today.getMonth() + 1}月${today.getDate()}日 ${days[dow]}`;
+        const isDayOff = dow === 1;
+        const sc = { 2: { s: '13:30', e: '20:00' }, 3: { s: '13:30', e: '20:00' }, 4: { s: '13:30', e: '20:00' }, 5: { s: '13:30', e: '20:00' }, 6: { s: '08:30', e: '18:30' }, 0: { s: '08:30', e: '18:30' } }[dow];
+        return `<div class="header"><h1>生活支持系统</h1><div class="date-display">${dateStr}</div></div><div class="container">
+          <div class="card"><div class="card-title"><span>⏰</span><span>今日安排</span></div>
+            ${isDayOff ? `<div class="day-off"><div class="day-off-icon">🌴</div><div>今天是休息日</div><div style="font-size:0.9rem;margin-top:8px;">好好放松一下吧</div></div>` : 
+            `<div class="work-schedule"><div class="schedule-item active"><div><div class="schedule-time">${sc.s}</div><div class="schedule-label">开始工作</div></div><div class="schedule-status">即将到来</div></div><div class="schedule-item"><div><div class="schedule-time">${sc.e}</div><div class="schedule-label">结束工作</div></div></div></div>`}
+          </div>
+          <div class="card"><div class="card-title"><span>💊</span><span>补铁记录</span></div><div class="iron-section"><button class="iron-button ${this.todayData.iron ? 'checked' : 'unchecked'}" id="iron-btn"><span>${this.todayData.iron ? '✓' : '○'}</span><span>${this.todayData.iron ? '今日已服用' : '点击标记已服用'}</span></button><div class="iron-streak" id="iron-streak">加载中...</div></div></div>
+          <div class="card"><div class="card-title"><span>💧</span><span>喝水记录</span></div><div class="water-display"><div class="water-amount" id="water-amount">${this.todayData.water}</div><div class="water-label">ml 今日饮水量</div></div><div class="water-progress"><div class="water-progress-bar" id="water-bar" style="width:${Math.min(this.todayData.water/2000*100,100)}%"></div></div><div class="water-buttons"><button class="water-btn" data-amount="200">+200ml</button><button class="water-btn" data-amount="350">+350ml</button><button class="water-btn" data-amount="500">+500ml</button></div></div>
+          <div class="card"><div class="card-title"><span>⚡</span><span>今日能量</span></div><div class="energy-section"><div class="energy-label">点击星星记录今天的能量水平</div><div class="energy-stars" id="energy-stars">${[1,2,3,4,5].map(i=>`<span class="energy-star ${i<=this.todayData.energy?'active':''}" data-level="${i}">⭐</span>`).join('')}</div><textarea class="energy-note" id="energy-note" placeholder="今天感觉怎么样？（可选）">${this.todayData.energyNote}</textarea></div></div>
+        </div>`;
+      }
+      renderStats() {
+        return `<div class="header"><h1>数据统计</h1><div class="date-display">查看你的坚持记录</div></div><div class="container">
+          <div class="card"><div class="card-title"><span>📊</span><span>功能开发中</span></div><div style="text-align:center;padding:40px 20px;color:var(--text-light);"><div style="font-size:3rem;margin-bottom:16px;">📈</div><div>统计功能即将上线</div><div style="font-size:0.9rem;margin-top:8px;">包括打卡热力图、趋势分析等</div></div></div>
+          <div class="card"><div class="card-title"><span>💾</span><span>数据管理</span></div>
+            <div style="display:flex;flex-direction:column;gap:12px;">
+              <button class="btn btn-primary" id="export-btn"><span>📥</span> 导出数据</button>
+              <button class="btn btn-secondary" id="import-btn"><span>📤</span> 导入数据</button>
+              <input type="file" id="import-file" accept=".json" style="display:none;">
+            </div>
+          </div>
+        </div>`;
+      }
+      renderSettings() {
+        return `<div class="header"><h1>设置</h1><div class="date-display">自定义你的提醒</div></div><div class="container">
+          <div class="card"><div class="settings-section"><div class="settings-title">通知设置</div><div class="setting-item"><div class="setting-label"><span class="setting-icon">🔔</span><span>工作提醒</span></div><label class="toggle"><input type="checkbox" id="setting-work" checked><span class="toggle-slider"></span></label></div><div class="setting-item"><div class="setting-label"><span class="setting-icon">💊</span><span>补铁提醒</span></div><label class="toggle"><input type="checkbox" id="setting-iron" checked><span class="toggle-slider"></span></label></div><div class="setting-item"><div class="setting-label"><span class="setting-icon">⏰</span><span>补铁时间</span></div><input type="time" class="time-input" id="iron-time" value="08:00"></div><div class="setting-item"><div class="setting-label"><span class="setting-icon">💧</span><span>喝水提醒</span></div><label class="toggle"><input type="checkbox" id="setting-water" checked><span class="toggle-slider"></span></label></div></div></div>
+          <div class="card"><div class="settings-section"><div class="settings-title">关于</div><div class="setting-item"><div class="setting-label"><span class="setting-icon">📱</span><span>添加到主屏幕</span></div><span style="color:var(--text-light);font-size:0.9rem;">像App一样使用</span></div><div class="setting-item"><div class="setting-label"><span class="setting-icon">👤</span><span>作者</span></div><span style="color:var(--text-light);font-size:0.9rem;">NovaZhang123</span></div></div></div>
+        </div>`;
+      }
+      bindHomeEvents() {
+        const ironBtn = document.getElementById('iron-btn');
+        ironBtn.addEventListener('click', async () => {
+          this.todayData.iron = !this.todayData.iron;
+          ironBtn.className = 'iron-button ' + (this.todayData.iron ? 'checked' : 'unchecked');
+          ironBtn.innerHTML = `<span>${this.todayData.iron ? '✓' : '○'}</span><span>${this.todayData.iron ? '今日已服用' : '点击标记已服用'}</span>`;
+          await db.setIronTaken(this.todayData.iron);
+          this.showToast(this.todayData.iron ? '已记录补铁 ✓' : '已取消');
+          this.updateIronStreak();
+        });
+        this.updateIronStreak();
+        document.querySelectorAll('.water-btn').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            const amt = parseInt(btn.dataset.amount);
+            this.todayData.water += amt;
+            await db.addWater(amt);
+            document.getElementById('water-amount').textContent = this.todayData.water;
+            document.getElementById('water-bar').style.width = Math.min(this.todayData.water/2000*100,100) + '%';
+            this.showToast(`+${amt}ml 💧`);
+          });
+        });
+        document.querySelectorAll('.energy-star').forEach(star => {
+          star.addEventListener('click', async () => {
+            this.todayData.energy = parseInt(star.dataset.level);
+            document.querySelectorAll('.energy-star').forEach((s, i) => {
+              s.classList.toggle('active', i < this.todayData.energy);
+            });
+            await db.setEnergy(this.todayData.energy, this.todayData.energyNote);
+          });
+        });
+        let to;
+        document.getElementById('energy-note').addEventListener('input', () => { 
+          clearTimeout(to); 
+          to = setTimeout(() => { 
+            this.todayData.energyNote = document.getElementById('energy-note').value; 
+            db.setEnergy(this.todayData.energy, this.todayData.energyNote); 
+          }, 500); 
+        });
+      }
+      async updateIronStreak() {
+        try { 
+          const s = await db.getIronStreak(); 
+          document.getElementById('iron-streak').textContent = s > 0 ? `已连续 ${s} 天 💪` : '开始你的补铁记录吧'; 
+        } catch {}
+      }
+      bindStatsEvents() {
+        document.getElementById('export-btn').addEventListener('click', async () => {
+          const data = await db.exportData();
+          const b = new Blob([data], { type: 'application/json' });
+          const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = `daily-support-${new Date().toISOString().split('T')[0]}.json`; a.click();
+          this.showToast('数据已导出');
+        });
+        const importBtn = document.getElementById('import-btn');
+        const importFile = document.getElementById('import-file');
+        importBtn.addEventListener('click', () => importFile.click());
+        importFile.addEventListener('change', async (e) => {
+          if (e.target.files[0]) {
+            try { await db.importData(await e.target.files[0].text()); this.showToast('导入成功'); await this.loadTodayData(); this.render(); } catch { this.showToast('导入失败'); }
+          }
+        });
+      }
+      bindSettingsEvents() {
+        ['work', 'iron', 'water'].forEach(k => { document.getElementById(`setting-${k}`).addEventListener('change', e => db.setSetting(`${k}Reminders`, e.target.checked)); });
+        document.getElementById('iron-time').addEventListener('change', e => db.setSetting('ironTime', e.target.value));
+        this.loadSettings();
+      }
+      async loadSettings() {
+        try {
+          document.getElementById('setting-work').checked = await db.getSetting('workReminders', true);
+          document.getElementById('setting-iron').checked = await db.getSetting('ironReminders', true);
+          document.getElementById('setting-water').checked = await db.getSetting('waterReminders', true);
+          document.getElementById('iron-time').value = await db.getSetting('ironTime', '08:00');
+        } catch {}
+      }
+      bindEvents() {
+        document.querySelectorAll('.nav-item').forEach(item => { item.addEventListener('click', e => { e.preventDefault(); this.currentPage = item.dataset.page; this.render(); }); });
+      }
+      updateNav() { document.querySelectorAll('.nav-item').forEach(item => { item.classList.toggle('active', item.dataset.page === this.currentPage); }); }
+      showToast(msg) {
+        const existing = document.querySelector('.toast');
+        if (existing) existing.remove();
+        const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg; document.body.appendChild(t);
+        requestAnimationFrame(() => t.classList.add('show'));
+        setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 200); }, 2000);
+      }
+    }
+    new App().init();
+  </script>
+</body>
+</html>
